@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
@@ -32,6 +33,9 @@ public class AssignmentService {
                 .dueDate(request.getDueDate())
                 .submissionType(Assignment.SubmissionType.valueOf(request.getSubmissionType().toUpperCase()))
                 .rubric(request.getRubric())
+                .testCases(request.getTestCases())
+                .codeBoilerplate(request.getCodeBoilerplate())
+                .language(request.getLanguage())
                 .plagiarismCheck(request.getPlagiarismCheck())
                 .build();
 
@@ -44,16 +48,32 @@ public class AssignmentService {
                 .collect(Collectors.toList());
     }
 
+    public AssignmentResponse getAssignmentById(Long id) {
+        return assignmentRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
+    }
+
+    public List<AssignmentResponse> getAllAssignments() {
+        return assignmentRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     private AssignmentResponse mapToResponse(Assignment a) {
+        Long courseId = a.getCourse() != null ? a.getCourse().getId() : null;
         return AssignmentResponse.builder()
                 .id(a.getId())
-                .courseId(a.getCourse().getId())
+                .courseId(courseId)
                 .title(a.getTitle())
                 .description(a.getDescription())
                 .points(a.getPoints())
                 .dueDate(a.getDueDate())
                 .submissionType(a.getSubmissionType().name())
                 .rubric(a.getRubric())
+                .testCases(a.getTestCases())
+                .codeBoilerplate(a.getCodeBoilerplate())
+                .language(a.getLanguage())
                 .plagiarismCheck(a.getPlagiarismCheck())
                 .build();
     }

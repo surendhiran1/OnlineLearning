@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RestController
 @RequestMapping("/api/v1/chat/groups")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class ChatGroupController {
 
     private final ChatGroupRepository chatGroupRepository;

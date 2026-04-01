@@ -1,28 +1,36 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, LinearProgress, Box } from '@mui/material';
+import { Card, CardContent, Typography, LinearProgress, Box, Button } from '@mui/material';
 import { EmojiEvents, LocalLibrary, Code, Star, CheckCircle } from '@mui/icons-material';
 import { api } from '../../utils/axiosConfig';
+import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../store/store';
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const { fullName } = useSelector((state: RootState) => state.auth);
   const { darkMode } = useSelector((state: RootState) => state.theme);
   const [courses, setCourses] = useState<any[]>([]);
   const [badges, setBadges] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>({ totalXp: 0, currentLevel: 1 });
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cRes, bRes, profRes] = await Promise.all([
+        const [cRes, bRes, profRes, qRes, aRes] = await Promise.all([
           api.get('/courses'),
           api.get('/gamification/badges'),
-          api.get('/users/profile')
+          api.get('/users/profile'),
+          api.get('/quizzes/all'),
+          api.get('/assignments/all')
         ]);
         setCourses(cRes.data.content || []);
         setBadges(bRes.data || []);
         setProfile(profRes.data);
+        setQuizzes(qRes.data || []);
+        setAssignments(aRes.data || []);
       } catch (err) {
         console.error(err);
       }
@@ -68,11 +76,17 @@ export default function StudentDashboard() {
            </div>
         </Card>
         
-        <Card className="shadow-sm border border-gray-100 dark:border-slate-700 flex items-center p-4 dark:bg-slate-800">
-           <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full mr-4"><Code className="text-green-600 dark:text-green-400" /></div>
+        <Card 
+          className="shadow-sm border border-gray-100 dark:border-slate-700 flex items-center p-4 dark:bg-slate-800 bg-indigo-50/20 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors group"
+          onClick={() => navigate('/coding-challenges')}
+        >
+           <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full mr-4 group-hover:scale-110 transition-transform"><Code className="text-indigo-600 dark:text-indigo-400" /></div>
            <div>
-              <Typography color="textSecondary" variant="body2" className="font-bold uppercase tracking-wider dark:text-slate-400">Assignments</Typography>
-              <Typography variant="h5" component="div" className="font-extrabold text-gray-900 dark:text-white">0</Typography>
+              <Typography color="textSecondary" variant="body2" className="font-bold uppercase tracking-wider dark:text-slate-400">Coding Challenges</Typography>
+              <Typography variant="h5" component="div" className="font-extrabold text-gray-900 dark:text-white">
+                {quizzes.filter(q => q.hasCodingQuestions || q.title.toLowerCase().includes('coding')).length + 
+                 assignments.filter(a => a.submissionType === 'CODE' || a.submissionType === 'code').length}
+              </Typography>
            </div>
         </Card>
         
@@ -140,6 +154,54 @@ export default function StudentDashboard() {
                       <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 p-2 rounded-full mr-4"><CheckCircle /></div>
                       <div><Typography variant="subtitle2" className="font-bold dark:text-white">Quiz Master</Typography><Typography variant="caption" color="textSecondary" className="dark:text-slate-400">Score 90%+ on 3 quizzes</Typography></div>
                    </div>
+                </div>
+            </Card>
+
+            <h3 id="coding-arena" className="text-xl font-bold text-gray-900 dark:text-white mb-4 mt-8 flex items-center gap-2">
+               <Code className="text-indigo-600" /> Top Coding Arena
+            </h3>
+            <Card className="shadow-sm border border-gray-100 dark:border-slate-700 p-6 dark:bg-slate-800 bg-gradient-to-br from-indigo-50/50 to-white dark:from-slate-800 dark:to-slate-900">
+                <div className="space-y-3">
+                   {[
+                      ...quizzes.filter(q => q.hasCodingQuestions || q.title.toLowerCase().match(/coding|challenge|lab|algo|logic|dev/)).map(q => ({ ...q, itemType: 'QUIZ' })),
+                      ...assignments.filter(a => (a.submissionType === 'CODE' || a.submissionType === 'code')).map(a => ({ ...a, itemType: 'ASSIGNMENT' }))
+                   ].slice(0, 5).map((item, i) => (
+                      <div key={item.id + i} className="flex items-center justify-between bg-white dark:bg-slate-700/50 rounded-xl p-3 border border-indigo-100 dark:border-indigo-900/30 shadow-sm hover:border-indigo-400 transition-all group">
+                         <div className="flex items-center">
+                            <div className="bg-indigo-600 text-white p-2 rounded-lg mr-4 font-black transition-transform group-hover:scale-110">{'<>'}</div>
+                            <div>
+                               <Typography variant="subtitle2" className="font-black dark:text-white uppercase tracking-tight">{item.title}</Typography>
+                               <Typography variant="caption" color="textSecondary" className="dark:text-slate-400 font-bold flex items-center gap-1">
+                                  {item.itemType === 'QUIZ' ? (
+                                    <>⏱️ {item.timeLimit} Min • Auto-Grader</>
+                                  ) : (
+                                    <>🏗️ Project Lab • Monaco IDE</>
+                                  )}
+                               </Typography>
+                            </div>
+                         </div>
+                         <Button 
+                            size="small" 
+                            variant="contained" 
+                            className="bg-indigo-600 hover:bg-indigo-700 rounded-lg font-black text-[10px] min-w-[70px]" 
+                            onClick={() => {
+                               if (item.itemType === 'QUIZ') {
+                                  navigate(`/quizzes/${item.id}/take`);
+                               } else {
+                                  navigate(`/student/assignments/${item.id}/ide`);
+                               }
+                            }}
+                         >
+                            SOLVE
+                         </Button>
+                      </div>
+                   ))}
+                   {(quizzes.filter(q => q.hasCodingQuestions || q.title.toLowerCase().match(/coding|challenge|lab|algo|logic|dev/)).length === 0 && 
+                    assignments.filter(a => a.submissionType === 'CODE' || a.submissionType === 'code').length === 0) && (
+                      <div className="text-center py-6">
+                         <Typography variant="caption" className="text-gray-400 italic">No global coding challenges active. <br/>Check your curriculum for course-specific labs.</Typography>
+                      </div>
+                   )}
                 </div>
             </Card>
          </div>

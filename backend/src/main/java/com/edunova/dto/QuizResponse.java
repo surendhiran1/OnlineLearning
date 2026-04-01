@@ -18,4 +18,5 @@ public class QuizResponse {
     private String showAnswers;
     private LocalDateTime releaseDate;
     private LocalDateTime deadline;
+    private Boolean hasCodingQuestions;
 }

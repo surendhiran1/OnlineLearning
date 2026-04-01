@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Paper, Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, ListItem, ListItemButton, ListItemText, ListItemSecondaryAction, Chip } from '@mui/material';
+import { Typography, Paper, Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, ListItem, ListItemButton, ListItemText, ListItemSecondaryAction, Chip, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 import { api } from '../../utils/axiosConfig';
 import CourseChat from '../../components/chat/CourseChat';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import TestCaseManager from '../../components/common/TestCaseManager';
 
 export default function ManageCourseDetails() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export default function ManageCourseDetails() {
 
   const [openModule, setOpenModule] = useState(false);
   const [openQuiz, setOpenQuiz] = useState(false);
+  const [openCoding, setOpenCoding] = useState(false);
   const [openAssignment, setOpenAssignment] = useState(false);
   const [openMaterial, setOpenMaterial] = useState(false);
   const [selModuleId, setSelModuleId] = useState<number | null>(null);
@@ -35,10 +37,21 @@ export default function ManageCourseDetails() {
     passingScore: 70, 
     attemptsAllowed: 3, 
     shuffleQuestions: true,
-    showAnswers: 'MANUAL'
+    showAnswers: 'MANUAL',
+    testCases: ''
   });
   const defaultDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  const [assignForm, setAssignForm] = useState({ title: '', description: '', points: 100, submissionType: 'FILE', plagiarismCheck: false, dueDate: defaultDueDate });
+  const [assignForm, setAssignForm] = useState({ 
+    title: '', 
+    description: '', 
+    points: 100, 
+    submissionType: 'FILE', 
+    plagiarismCheck: false, 
+    dueDate: defaultDueDate, 
+    testCases: '', 
+    language: 'javascript',
+    codeBoilerplate: ''
+  });
 
   useEffect(() => {
     fetchData();
@@ -113,7 +126,17 @@ export default function ManageCourseDetails() {
   };
 
   const handleCreateAssignment = async () => {
-    try { await api.post(`/courses/${id}/assignments`, assignForm); setOpenAssignment(false); fetchData(); } catch (err) { alert("Failed to add Assignment"); }
+    try { 
+      const payload = {
+        ...assignForm,
+        submissionType: assignForm.submissionType.toUpperCase()
+      };
+      await api.post(`/courses/${id}/assignments`, payload); 
+      setOpenAssignment(false); 
+      fetchData(); 
+    } catch (err) { 
+      alert("Failed to add Assignment. Ensure data satisfies validation constraints."); 
+    }
   };
 
   const handleDownloadCourseReport = async (format: 'pdf' | 'xlsx') => {
@@ -265,6 +288,94 @@ export default function ManageCourseDetails() {
             </List>
          </Paper>
 
+          {/* CODING ASSESSMENTS & IDE PROJECTS */}
+          <Paper className="p-6 border border-gray-100 shadow-sm border-t-4 border-t-indigo-500 bg-indigo-50/10">
+            <div className="flex justify-between mb-4 items-center">
+              <div>
+                 <Typography variant="h6" className="font-extrabold flex items-center gap-2 text-indigo-950">
+                    💻 Coding Assessments
+                 </Typography>
+                 <Typography variant="caption" className="text-gray-500 font-bold uppercase tracking-widest">Logic-based Auto-Grading & IDE-Lab IDEs</Typography>
+              </div>
+              <Button 
+               variant="contained" 
+               className="bg-indigo-600 hover:bg-indigo-700 font-black shadow-lg shadow-indigo-100 px-4 py-2" 
+               onClick={() => {
+                  setQuizForm({ ...quizForm, title: '', description: '' });
+                  setOpenCoding(true);
+               }}
+              >
+                + Create Coding Challenge
+              </Button>
+            </div>
+            
+            {(quizzes.length === 0 && assignments.length === 0) ? (
+               <div className="bg-indigo-50/50 p-6 rounded-2xl border-2 border-dashed border-indigo-100 text-center mb-2 flex flex-col items-center gap-2">
+                  <div className="text-3xl">🧩</div>
+                  <Typography variant="body2" className="text-indigo-900 font-bold max-w-xs">
+                     No coding assessments created yet. Use the buttons above to build labs or projects.
+                  </Typography>
+               </div>
+            ) : (
+               <List className="space-y-3">
+                 {/* Show all Quizzes in this specialized section if they are built for coding */}
+                 {quizzes.map(q => (
+                   <Paper key={q.id} className="border border-gray-100 bg-white hover:border-indigo-400 hover:shadow-md transition-all rounded-xl overflow-hidden shadow-sm" elevation={0}>
+                     <ListItem disablePadding>
+                       <ListItemButton onClick={() => navigate(`/courses/manage/quizzes/${q.id}`)} className="cursor-pointer py-4">
+                         <ListItemText 
+                           primary={<span className="font-black text-indigo-950 text-lg uppercase tracking-tight">{q.title}</span>} 
+                           secondary={<div className="flex items-center gap-2 mt-1">
+                              <Chip label="AUTO-GRADED" size="small" className="bg-indigo-600 text-white font-black text-[9px] h-4" />
+                              <span className="text-[10px] font-bold text-gray-500">PASS: {q.passingScore}% | LIMIT: {q.timeLimit}m</span>
+                           </div>} 
+                         />
+                       </ListItemButton>
+                       <ListItemSecondaryAction className="pr-6">
+                           <Button 
+                              variant="outlined"
+                              size="small" 
+                              onClick={() => navigate(`/courses/manage/quizzes/${q.id}`)} 
+                              className="border-2 border-indigo-600 text-indigo-600 font-black text-[11px] rounded-lg hover:bg-indigo-50 shadow-sm" 
+                           >
+                              TEST CASES
+                           </Button>
+                       </ListItemSecondaryAction>
+                     </ListItem>
+                   </Paper>
+                 ))}
+
+                 {/* Show Coding ASSIGNMENTS */}
+                 {assignments.filter(a => a.submissionType === 'CODE' || a.submissionType === 'code').map(a => (
+                   <Paper key={a.id} className="border border-gray-100 bg-white hover:border-blue-400 hover:shadow-md transition-all rounded-xl overflow-hidden shadow-sm" elevation={0}>
+                     <ListItem disablePadding>
+                       <ListItemButton onClick={() => navigate(`/instructor/assignments/${a.id}/submissions`)} className="cursor-pointer py-4">
+                         <ListItemText 
+                           primary={<span className="font-black text-blue-900 text-lg uppercase tracking-tight">{a.title}</span>} 
+                           secondary={<div className="flex items-center gap-2 mt-1">
+                              <Chip label="IDE PROJECT" size="small" className="bg-blue-600 text-white font-black text-[9px] h-4" />
+                              <span className="text-[10px] font-bold text-gray-500">POINTS: {a.points} | DUE: {new Date(a.dueDate).toLocaleDateString()}</span>
+                              {a.plagiarismCheck && <Chip label="PLAGIARISM" size="small" color="error" variant="outlined" sx={{ height: 16, fontSize: 8, fontWeight: 'bold' }} />}
+                           </div>} 
+                         />
+                       </ListItemButton>
+                       <ListItemSecondaryAction className="pr-6">
+                           <Button 
+                              variant="outlined"
+                              size="small" 
+                              onClick={() => navigate(`/instructor/assignments/${a.id}/submissions`)} 
+                              className="border-2 border-blue-600 text-blue-600 font-black text-[11px] rounded-lg hover:bg-blue-50 shadow-sm" 
+                           >
+                              REVIEW
+                           </Button>
+                       </ListItemSecondaryAction>
+                     </ListItem>
+                   </Paper>
+                 ))}
+              </List>
+            )}
+         </Paper>
+
          {/* ASSIGNMENTS */}
          <Paper className="p-6 border border-gray-100 shadow-sm">
             <div className="flex justify-between mb-4">
@@ -322,15 +433,75 @@ export default function ManageCourseDetails() {
          </DialogContent>
          <DialogActions><Button onClick={handleCreateQuiz} variant="contained" disabled={!quizForm.title}>Create Quiz</Button></DialogActions>
       </Dialog>
+      <Dialog open={openCoding} onClose={() => setOpenCoding(false)} maxWidth="sm" fullWidth>
+         <DialogTitle>Configure Platform-wide Coding Challenge</DialogTitle>
+         <DialogContent dividers className="space-y-4">
+            <Typography variant="body2" className="bg-blue-50 p-3 rounded-lg text-blue-800 mb-4 border border-blue-100 italic">
+               This will create a specialized environment where students solve problems in a Monaco-powered IDE.
+            </Typography>
+            <TextField fullWidth label="Challenge Name (e.g. Master Binary Search)" value={quizForm.title} onChange={e => setQuizForm({...quizForm, title: e.target.value})} />
+            <TextField fullWidth multiline rows={2} label="Problem Narrative / Instructions" value={quizForm.description} onChange={e => setQuizForm({...quizForm, description: e.target.value})} />
+            <div className="flex space-x-4">
+               <TextField type="number" label="Time Limit (min)" value={quizForm.timeLimit} onChange={e => setQuizForm({...quizForm, timeLimit: parseInt(e.target.value)})} />
+               <TextField type="number" label="Pass Mark (%)" value={quizForm.passingScore} onChange={e => setQuizForm({...quizForm, passingScore: parseFloat(e.target.value)})} />
+            </div>
+            <TestCaseManager 
+              value={(quizForm as any).testCases || ''} 
+              onChange={newVal => setQuizForm({...quizForm, testCases: newVal} as any)} 
+            />
+            
+            <TextField 
+                fullWidth 
+                multiline 
+                rows={4} 
+                label="Code Boilerplate / Starter Code (Optional)" 
+                placeholder="public class Solution { ... }" 
+                value={(quizForm as any).codeBoilerplate || ''} 
+                onChange={e => setQuizForm({...quizForm, codeBoilerplate: e.target.value} as any)} 
+                sx={{ mt: 3, fontFamily: 'monospace' }}
+            />
+         </DialogContent>
+         <DialogActions>
+            <Button 
+               onClick={async () => {
+                  try {
+                    const qRes = await api.post(`/courses/${id}/quizzes`, quizForm);
+                    const quizId = qRes.data.id;
+                    // Auto-generate the code question for this quiz
+                    await api.post(`/quizzes/${quizId}/questions`, {
+                      type: 'CODE',
+                      text: quizForm.description || "Solve the challenge.",
+                      points: 100,
+                      orderIndex: 1,
+                      correctAnswer: "SEE_TEST_CASES",
+                      testCases: (quizForm as any).testCases || "[]",
+                      codeBoilerplate: (quizForm as any).codeBoilerplate || ""
+                    });
+                    setOpenCoding(false);
+                    fetchData();
+                  } catch (err) {
+                    alert("Failed to deploy challenge portal. Ensure title is unique.");
+                  }
+               }} 
+               variant="contained" 
+               className="bg-indigo-600"
+               disabled={!quizForm.title}
+            >
+               Deploy Challenge Portal
+            </Button>
+         </DialogActions>
+      </Dialog>
       <Dialog open={openAssignment} onClose={() => setOpenAssignment(false)} maxWidth="sm" fullWidth>
          <DialogTitle>Attach Assignment Block</DialogTitle>
          <DialogContent dividers className="space-y-4">
             <TextField fullWidth label="Assignment Title" value={assignForm.title} onChange={e => setAssignForm({...assignForm, title: e.target.value})} />
+            <TextField fullWidth multiline rows={3} label="Instructions / Description" value={assignForm.description} onChange={e => setAssignForm({...assignForm, description: e.target.value})} />
             <div className="flex items-center space-x-4 mt-2">
                <TextField type="number" label="Points Yield" value={assignForm.points} onChange={e => setAssignForm({...assignForm, points: parseInt(e.target.value)})} />
-               <select className="border border-gray-300 rounded p-4 h-[56px]" value={assignForm.submissionType} onChange={e => setAssignForm({...assignForm, submissionType: e.target.value})}>
-                  <option value="FILE">File Upload</option>
-                  <option value="LINK">URL Link</option>
+               <select className="border border-gray-300 rounded p-4 h-[56px] text-gray-700 bg-white" value={assignForm.submissionType} onChange={e => setAssignForm({...assignForm, submissionType: e.target.value})}>
+                  <option value="FILE">Standard File Upload</option>
+                  <option value="LINK">External URL / Repo Link</option>
+                  <option value="CODE">IDE Lab (Monaco Code Editor)</option>
                </select>
                <TextField 
                   type="datetime-local" 
@@ -341,6 +512,54 @@ export default function ManageCourseDetails() {
                   className="flex-grow"
                />
             </div>
+            <div className="border border-gray-100 p-4 rounded-xl bg-gray-50 flex justify-between items-center">
+               <div>
+                  <Typography variant="body2" className="font-bold text-gray-700">Plagiarism Detection</Typography>
+                  <Typography variant="caption" className="text-gray-500">Automatically check for code duplication or text similarities.</Typography>
+               </div>
+               <input 
+                  type="checkbox" 
+                  className="w-5 h-5 accent-primary-600"
+                  checked={assignForm.plagiarismCheck} 
+                  onChange={e => setAssignForm({...assignForm, plagiarismCheck: e.target.checked})} 
+               />
+            </div>
+             {assignForm.submissionType === 'CODE' && (
+                <div className="space-y-4 border border-indigo-100 p-4 rounded-xl bg-indigo-50/30 my-4">
+                  <Typography variant="subtitle2" className="text-indigo-900 font-bold flex items-center gap-2">
+                     🛠️ Coding Lab Configuration
+                  </Typography>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="lang-select">Default IDE Language</InputLabel>
+                    <Select
+                      labelId="lang-select"
+                      value={assignForm.language}
+                      label="Default IDE Language"
+                      onChange={e => setAssignForm({ ...assignForm, language: e.target.value as string })}
+                    >
+                      <MenuItem value="javascript">JavaScript</MenuItem>
+                      <MenuItem value="python">Python</MenuItem>
+                      <MenuItem value="java">Java</MenuItem>
+                      <MenuItem value="cpp">C++</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TestCaseManager 
+                    value={assignForm.testCases} 
+                    onChange={val => setAssignForm({ ...assignForm, testCases: val })} 
+                  />
+                  <TextField 
+                    fullWidth 
+                    multiline 
+                    rows={4} 
+                    label="Code Boilerplate / Starter Code" 
+                    placeholder="Provide the initial code students will see..." 
+                    value={assignForm.codeBoilerplate} 
+                    onChange={e => setAssignForm({ ...assignForm, codeBoilerplate: e.target.value })} 
+                    sx={{ mt: 3, fontFamily: 'monospace' }}
+                  />
+                </div>
+             )}
+             <TextField fullWidth multiline rows={2} label="Grading Rubric (optional)" value={(assignForm as any).rubric || ''} onChange={e => setAssignForm({...assignForm, rubric: e.target.value} as any)} placeholder="Describe grading criteria..." />
          </DialogContent>
          <DialogActions><Button onClick={handleCreateAssignment} variant="contained" disabled={!assignForm.title}>Create Submittable</Button></DialogActions>
       </Dialog>

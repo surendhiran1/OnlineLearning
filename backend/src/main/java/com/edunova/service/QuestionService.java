@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
@@ -31,6 +32,8 @@ public class QuestionService {
                 .options(request.getOptions())
                 .correctAnswer(request.getCorrectAnswer())
                 .explanation(request.getExplanation())
+                .testCases(request.getTestCases())
+                .codeBoilerplate(request.getCodeBoilerplate())
                 .points(request.getPoints())
                 .orderIndex(request.getOrderIndex())
                 .build();
@@ -39,9 +42,13 @@ public class QuestionService {
     }
 
     public List<QuestionResponse> getQuestionsByQuizId(Long quizId) {
-        return questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId)
+        return questionRepository.findByQuiz_IdOrderByOrderIndexAsc(quizId)
                 .stream().map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public boolean hasCodingQuestions(Long quizId) {
+        return questionRepository.existsByQuiz_IdAndType(quizId, Question.Type.CODE);
     }
 
     private QuestionResponse mapToResponse(Question q) {
@@ -53,6 +60,8 @@ public class QuestionService {
                 .options(q.getOptions())
                 .correctAnswer(q.getCorrectAnswer())
                 .explanation(q.getExplanation())
+                .testCases(q.getTestCases())
+                .codeBoilerplate(q.getCodeBoilerplate())
                 .points(q.getPoints())
                 .orderIndex(q.getOrderIndex())
                 .build();

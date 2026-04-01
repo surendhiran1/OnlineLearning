@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
-    List<Question> findByQuizIdOrderByOrderIndexAsc(Long quizId);
+    List<Question> findByQuiz_IdOrderByOrderIndexAsc(Long quizId);
+    boolean existsByQuiz_IdAndType(Long quizId, com.edunova.model.Question.Type type);
 }

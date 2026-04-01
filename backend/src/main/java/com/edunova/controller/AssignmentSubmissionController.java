@@ -30,6 +30,17 @@ public class AssignmentSubmissionController {
         return new ResponseEntity<>(submissionService.submitAssignment(currentUser.getUser(), assignmentId, file), HttpStatus.CREATED);
     }
 
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<SubmissionResponse> submitCodeAssignment(
+            @PathVariable Long assignmentId,
+            @RequestBody CodeSubmissionRequest request,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        return new ResponseEntity<>(submissionService.submitCodeAssignment(currentUser.getUser(), assignmentId, request), HttpStatus.CREATED);
+    }
+
+    public record CodeSubmissionRequest(String code, String language, Double score) {}
+
+
     @GetMapping
     @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<List<SubmissionResponse>> getSubmissions(@PathVariable Long assignmentId) {

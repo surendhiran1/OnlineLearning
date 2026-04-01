@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Typography, Paper, Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, MenuItem } from '@mui/material';
 import { api } from '../../utils/axiosConfig';
+import TestCaseManager from '../../components/common/TestCaseManager';
 
 export default function ManageQuizQuestions() {
   const { quizId } = useParams();
@@ -18,7 +19,9 @@ export default function ManageQuizQuestions() {
      correctAnswer: '', 
      explanation: '', 
      points: 10, 
-     orderIndex: 1 
+     orderIndex: 1,
+     testCases: '',
+     codeBoilerplate: ''
   });
 
   useEffect(() => {
@@ -44,7 +47,7 @@ export default function ManageQuizQuestions() {
     try {
       await api.post(`/quizzes/${quizId}/questions`, form);
       setOpenQ(false);
-      setForm({ ...form, text: '', options: '', correctAnswer: '', orderIndex: form.orderIndex + 1 });
+      setForm({ ...form, text: '', options: '', correctAnswer: '', testCases: '', orderIndex: form.orderIndex + 1 });
       fetchData();
     } catch (err) { alert("Failed to add question to database."); }
   };
@@ -77,6 +80,7 @@ export default function ManageQuizQuestions() {
                         <Typography variant="subtitle1" className="font-bold border-b pb-2 mb-2">{q.orderIndex}. {q.type}</Typography>
                         <Typography variant="body1" className="mb-2">{q.text}</Typography>
                         {q.options && <Typography variant="caption" className="block text-gray-600">Options: {q.options}</Typography>}
+                        {q.testCases && <Typography variant="caption" className="block text-gray-600 mt-1">Test Cases: {q.testCases}</Typography>}
                         <Typography variant="caption" className="block font-bold text-green-700 mt-2">Expected Answer Logic: {q.correctAnswer}</Typography>
                       </div>
                       <span className="bg-gray-200 text-gray-700 px-3 py-1 text-sm font-bold rounded-full">{q.points} Pts</span>
@@ -110,6 +114,26 @@ export default function ManageQuizQuestions() {
             )}
             
             <TextField fullWidth multiline rows={2} label={form.type === 'CODE' ? 'Expected CLI Output / Regex' : 'Validated Correct Answers'} placeholder={form.type === 'CODE' ? "Hello World" : "Apple"} value={form.correctAnswer} onChange={e => setForm({...form, correctAnswer: e.target.value})} />
+            
+            {form.type === 'CODE' && (
+                <>
+                   <TestCaseManager 
+                      value={form.testCases} 
+                      onChange={val => setForm({ ...form, testCases: val })} 
+                   />
+                   <TextField 
+                      fullWidth 
+                      multiline 
+                      rows={4} 
+                      label="Code Boilerplate / Starter Code" 
+                      placeholder="e.g. public class Solution { ... }" 
+                      value={form.codeBoilerplate} 
+                      onChange={e => setForm({ ...form, codeBoilerplate: e.target.value })} 
+                      sx={{ mt: 3, fontFamily: 'monospace' }}
+                   />
+                </>
+            )}
+
             <TextField fullWidth label="Explanation (shown after grading)" value={form.explanation} onChange={e => setForm({...form, explanation: e.target.value})} />
          </DialogContent>
          <DialogActions>

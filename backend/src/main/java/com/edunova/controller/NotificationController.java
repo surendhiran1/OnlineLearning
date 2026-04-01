@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class NotificationController {
 
     private final NotificationRepository notificationRepository;

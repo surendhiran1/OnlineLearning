@@ -26,6 +26,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
     { name: 'My Courses', path: '/courses', icon: <CoursesIcon /> },
     { name: 'Assignments', path: '/assignments', icon: <AssignmentIcon /> },
+    { name: 'Coding Challenges', path: '/coding-challenges', icon: <CodeIcon />, color: 'indigo' },
     { name: 'Progress', path: '/progress', icon: <ProgressIcon /> },
     { name: 'Coding Playground', path: '/ide', icon: <CodeIcon /> },
     { name: 'Discussions', path: '/messages', icon: <ChatIcon /> },
@@ -34,6 +35,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const staffLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
     { name: 'Manage Courses', path: '/courses/manage', icon: <CoursesIcon /> },
+    { name: 'Coding Assessments', path: '/courses/manage', icon: <CodeIcon />, badge: 'NEW' },
     { name: 'Students', path: '/students', icon: <UsersIcon /> },
     { name: 'Analytics', path: '/analytics', icon: <ProgressIcon /> },
     { name: 'Coding IDE', path: '/ide', icon: <CodeIcon /> },

@@ -56,6 +56,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @SuppressWarnings("null")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
         if(userRepository.existsByEmail(registerRequest.getEmail())) {
             return new ResponseEntity<>("Email is already taken!", HttpStatus.BAD_REQUEST);

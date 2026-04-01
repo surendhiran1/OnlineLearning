@@ -10,7 +10,8 @@ import {
   LibraryBooks as CoursesIcon, 
   Timeline as GrowthIcon,
   TrendingUp,
-  EventNote
+  EventNote,
+  Code as CodeIcon
 } from '@mui/icons-material';
 import { api } from '../../utils/axiosConfig';
 import { useNavigate } from 'react-router-dom';
@@ -22,16 +23,22 @@ export default function StaffDashboard() {
   const { darkMode } = useSelector((state: RootState) => state.theme);
   const [courses, setCourses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cRes, sRes] = await Promise.all([
+        const [cRes, sRes, qRes, aRes] = await Promise.all([
           api.get('/courses'),
-          api.get('/users/students')
+          api.get('/users/students'),
+          api.get('/quizzes/all'),
+          api.get('/assignments/all')
         ]);
         setCourses(cRes.data.content || []);
         setStudents(sRes.data || []);
+        setQuizzes(qRes.data || []);
+        setAssignments(aRes.data || []);
       } catch (err) {
         console.error("Error fetching staff metrics:", err);
       }
@@ -81,12 +88,12 @@ export default function StaffDashboard() {
             Create Course
           </Button>
           <Button 
-            variant="outlined" 
-            startIcon={<PeopleIcon />} 
-            className="rounded-xl px-6 py-2.5 capitalize font-bold border-gray-200 text-gray-700 hover:bg-gray-50"
-            onClick={() => navigate('/students')}
+            variant="contained" 
+            startIcon={<CodeIcon />} 
+            className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-6 py-2.5 shadow-lg shadow-indigo-100 capitalize font-black"
+            onClick={() => navigate('/courses/manage')}
           >
-            Manage Students
+            Manage Coding Assessments
           </Button>
         </div>
       </div>
@@ -95,7 +102,7 @@ export default function StaffDashboard() {
       <Grid container spacing={3}>
         {[
           { label: 'Total Students', value: totalStudents, icon: <PeopleIcon />, color: 'blue', trend: '+12%' },
-          { label: 'Managed Courses', value: activeCourses, icon: <CoursesIcon />, color: 'purple', trend: 'Active' },
+          { label: 'Coding Assessments', value: quizzes.filter(q => q.hasCodingQuestions || q.title.toLowerCase().match(/coding|challenge|lab|algo|logic|dev/)).length + assignments.filter(a => a.submissionType === 'CODE' || a.submissionType === 'code').length, icon: <CodeIcon />, color: 'indigo', trend: 'Hands-on Labs' },
           { label: 'Learning Velocity', value: `${totalHrs}h`, icon: <GrowthIcon />, color: 'orange', trend: 'Total' },
           { label: 'XP Distributed', value: totalXP, icon: <TrendingUp />, color: 'green', trend: 'Real-time' }
         ].map((kpi, idx) => (
@@ -199,16 +206,7 @@ export default function StaffDashboard() {
            </Paper>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-           <Paper className="p-6 rounded-2xl shadow-none border border-gray-100 bg-gray-900 text-white relative overflow-hidden">
-              <Box sx={{ position: 'absolute', right: -40, bottom: -40, width: 192, height: 192, bgcolor: 'primary.500', borderRadius: '50%', opacity: 0.2, filter: 'blur(48px)' }}></Box>
-              <Typography variant="h6" className="font-bold mb-2">Upgrade to EduNova Pro</Typography>
-              <Typography variant="body2" className="text-gray-400 mb-6 max-w-xs">Get advanced AI grading features and unlimited hosting space for your course assets.</Typography>
-              <Button variant="contained" sx={{ bgcolor: 'primary.600', '&:hover': { bgcolor: 'primary.700' }, borderRadius: 3, px: 3, py: 1, textTransform: 'none', fontWeight: 'bold' }}>
-                 View Premium Perks
-              </Button>
-           </Paper>
-        </Grid>
+
       </Grid>
     </div>
   );

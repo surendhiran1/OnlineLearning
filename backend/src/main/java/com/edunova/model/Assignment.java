@@ -42,6 +42,14 @@ public class Assignment {
     @Column(columnDefinition = "TEXT")
     private String rubric;
 
+    @Column(columnDefinition = "TEXT")
+    private String testCases;
+
+    @Column(columnDefinition = "TEXT", name = "code_boilerplate")
+    private String codeBoilerplate;
+
+    private String language;
+
     @Column(name = "plagiarism_check")
     @Builder.Default
     private Boolean plagiarismCheck = false;

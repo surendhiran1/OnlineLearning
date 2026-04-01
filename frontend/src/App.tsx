@@ -21,6 +21,8 @@ import Settings from './pages/dashboard/Settings';
 import Layout from './components/layout/Layout';
 import IDE from './pages/student/IDE';
 import GroupChat from './pages/student/GroupChat';
+import AssignmentIDE from './pages/student/AssignmentIDE';
+import CodingChallenges from './pages/student/CodingChallenges';
 import ThemeProvider from './components/common/ThemeProvider';
 import { ProtectedRoute, PublicRoute } from './components/common/ProtectedRoute';
 
@@ -55,6 +57,8 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/ide" element={<IDE />} />
                 <Route path="/messages" element={<GroupChat />} />
+                <Route path="/student/assignments/:assignmentId/ide" element={<AssignmentIDE />} />
+                <Route path="/coding-challenges" element={<CodingChallenges />} />
               </Route>
             </Route>
 

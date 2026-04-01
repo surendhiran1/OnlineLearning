@@ -8,9 +8,9 @@ spring:
       max-request-size: 50MB
   
   datasource:
-    url: jdbc:mysql://localhost:3306/x?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 9986132559
+    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/x?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DATABASE_USERNAME:root}
+    password: ${DATABASE_PASSWORD:9986132559}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -24,7 +24,7 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb://localhost:27017/edunova
+      uri: ${MONGODB_URI:mongodb://localhost:27017/edunova}
 
 server:
   port: 8080

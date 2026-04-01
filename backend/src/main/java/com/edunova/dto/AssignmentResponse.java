@@ -15,5 +15,8 @@ public class AssignmentResponse {
     private LocalDateTime dueDate;
     private String submissionType;
     private String rubric;
+    private String testCases;
+    private String codeBoilerplate;
+    private String language;
     private Boolean plagiarismCheck;
 }

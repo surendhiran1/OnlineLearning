@@ -55,6 +55,7 @@ public class ChatController {
     }
 
     @MessageMapping("/chat/{streamId}")
+    @SuppressWarnings("null")
     public void processMessage(@DestinationVariable String streamId, 
                              @Payload ChatMessageRequest request,
                              Authentication authentication) {

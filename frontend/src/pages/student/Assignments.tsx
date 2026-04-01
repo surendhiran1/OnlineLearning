@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Typography, Paper, Button, Chip, CircularProgress, Alert, Snackbar } from '@mui/material';
 import { CloudUpload as UploadIcon, CheckCircle as DoneIcon } from '@mui/icons-material';
 import { api } from '../../utils/axiosConfig';
 
 export default function Assignments() {
+  const navigate = useNavigate();
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<number | null>(null);
@@ -138,15 +140,25 @@ export default function Assignments() {
                    )}
                  </div>
                ) : (
-                 <Button 
-                  variant="contained" 
-                  className="bg-primary-600 hover:bg-primary-700 min-w-[180px]" 
-                  startIcon={uploading === assignment.id ? <CircularProgress size={20} color="inherit" /> : <UploadIcon />}
-                  onClick={() => handleUploadTrigger(assignment.id)}
-                  disabled={uploading !== null}
-                 >
-                   {uploading === assignment.id ? 'Uploading...' : 'Submit assignment'}
-                 </Button>
+                  assignment.submissionType === 'CODE' ? (
+                    <Button 
+                      variant="contained" 
+                      className="bg-indigo-600 hover:bg-indigo-700 min-w-[180px] font-extrabold uppercase tracking-widest text-xs h-[42px]" 
+                      onClick={() => navigate(`/student/assignments/${assignment.id}/ide`)}
+                    >
+                      🚀 Open IDE Lab
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="contained" 
+                      className="bg-primary-600 hover:bg-primary-700 min-w-[180px]" 
+                      startIcon={uploading === assignment.id ? <CircularProgress size={20} color="inherit" /> : <UploadIcon />}
+                      onClick={() => handleUploadTrigger(assignment.id)}
+                      disabled={uploading !== null}
+                    >
+                      {uploading === assignment.id ? 'Uploading...' : 'Submit assignment'}
+                    </Button>
+                  )
                )}
             </div>
           </Paper>

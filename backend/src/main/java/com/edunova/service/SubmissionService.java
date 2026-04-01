@@ -16,6 +16,8 @@ import com.edunova.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Date;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class SubmissionService {
 
     private final SubmissionRepository submissionRepository;
@@ -34,6 +37,8 @@ public class SubmissionService {
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final CodeExecutionService codeExecutionService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public SubmissionResponse submitQuiz(User user, Long quizId, QuizSubmissionRequest request) {
         Quiz quiz = quizRepository.findById(quizId)
@@ -44,15 +49,23 @@ public class SubmissionService {
             throw new IllegalArgumentException("Maximum attempts reached for this quiz.");
         }
 
-        List<Question> questions = questionRepository.findByQuizIdOrderByOrderIndexAsc(quizId);
+        List<Question> questions = questionRepository.findByQuiz_IdOrderByOrderIndexAsc(quizId);
         double totalPoints = 0;
         double gainedPoints = 0;
 
         for (Question q : questions) {
             totalPoints += q.getPoints();
             String studentAns = findStudentAnswer(q.getId(), request.getAnswers());
-            if (studentAns != null && studentAns.trim().equalsIgnoreCase(q.getCorrectAnswer().trim())) {
-                gainedPoints += q.getPoints();
+            if (studentAns == null) continue;
+
+            if (q.getType() == Question.Type.CODE) {
+                if (gradeCodeQuestion(q, studentAns)) {
+                    gainedPoints += q.getPoints();
+                }
+            } else {
+                if (studentAns.trim().equalsIgnoreCase(q.getCorrectAnswer().trim())) {
+                    gainedPoints += q.getPoints();
+                }
             }
         }
 
@@ -142,6 +155,31 @@ public class SubmissionService {
                 .build();
     }
 
+    public SubmissionResponse submitCodeAssignment(User user, Long assignmentId, com.edunova.controller.AssignmentSubmissionController.CodeSubmissionRequest request) {
+        Map<String, Object> submissionMetadata = new HashMap<>();
+        submissionMetadata.put("code", request.code() != null ? request.code() : "");
+        submissionMetadata.put("language", request.language() != null ? request.language() : "javascript");
+        submissionMetadata.put("submissionMethod", "IDE");
+
+        Submission submission = Submission.builder()
+                .userId(user.getId())
+                .assignmentId(assignmentId)
+                .submittedAt(new Date())
+                .status("GRADED") // Auto-graded based on test cases passed in UI
+                .score(request.score())
+                .feedback("Automated Evaluation complete. Result: " + request.score() + "%")
+                .metadata(submissionMetadata)
+                .build();
+
+        submission = submissionRepository.save(submission);
+        
+        // Award XP
+        int xp = request.score() > 0 ? request.score().intValue() : 10;
+        gamificationService.awardXp(user.getId(), xp, "Solved coding challenge: " + assignmentId);
+        
+        return mapToSubmissionResponse(submission);
+    }
+
     public List<SubmissionResponse> getSubmissionsByAssignmentId(Long assignmentId) {
         return submissionRepository.findByAssignmentId(assignmentId).stream()
                 .map(this::mapToSubmissionResponse)
@@ -166,6 +204,32 @@ public class SubmissionService {
                 .stream().findFirst()
                 .map(this::mapToSubmissionResponse)
                 .orElse(null);
+    }
+
+    private boolean gradeCodeQuestion(Question q, String code) {
+        try {
+            String testCasesJson = q.getTestCases();
+            if (testCasesJson == null || testCasesJson.isEmpty()) {
+                // If no test cases, we might fallback to simple output match or just check if it runs
+                CodeExecutionService.ExecutionResult res = codeExecutionService.execute("javascript", code, "");
+                return res.getError() == null && res.getOutput() != null && res.getOutput().trim().contains(q.getCorrectAnswer().trim());
+            }
+
+            List<Map<String, String>> testCases = objectMapper.readValue(testCasesJson, new TypeReference<List<Map<String, String>>>() {});
+            int passed = 0;
+            for (Map<String, String> tc : testCases) {
+                String input = tc.get("input");
+                String expected = tc.get("expected");
+                CodeExecutionService.ExecutionResult res = codeExecutionService.execute("javascript", code, input);
+                
+                if (res.getError() == null && res.getOutput() != null && res.getOutput().trim().equals(expected.trim())) {
+                    passed++;
+                }
+            }
+            return passed == testCases.size();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private SubmissionResponse mapToSubmissionResponse(Submission s) {

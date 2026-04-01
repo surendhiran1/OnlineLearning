@@ -14,10 +14,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class QuizService {
 
     private final QuizRepository quizRepository;
     private final CourseRepository courseRepository;
+    private final com.edunova.service.QuestionService questionService;
 
     public QuizResponse createQuiz(Long courseId, QuizRequest request) {
         Course course = courseRepository.findById(courseId)
@@ -50,6 +52,16 @@ public class QuizService {
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz", "id", id)));
     }
 
+    public List<QuizResponse> getAllQuizzes() {
+        return quizRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<com.edunova.dto.QuestionResponse> getQuestions(Long quizId) {
+        return questionService.getQuestionsByQuizId(quizId);
+    }
+
     private QuizResponse mapToResponse(Quiz quiz) {
         return QuizResponse.builder()
                 .id(quiz.getId())
@@ -63,6 +75,7 @@ public class QuizService {
                 .showAnswers(quiz.getShowAnswers().name())
                 .releaseDate(quiz.getReleaseDate())
                 .deadline(quiz.getDeadline())
+                .hasCodingQuestions(questionService.hasCodingQuestions(quiz.getId()))
                 .build();
     }
 }

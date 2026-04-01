@@ -13,6 +13,8 @@ public class QuestionResponse {
     private String options;
     private String correctAnswer;
     private String explanation;
+    private String testCases;
+    private String codeBoilerplate;
     private Integer points;
     private Integer orderIndex;
 }

@@ -39,6 +39,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**", "/ws/**", "/api/v1/modules/*/materials/download/**").permitAll()
+                .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/favicon.ico", "*.js", "*.css", "*.png", "*.jpg").permitAll()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))

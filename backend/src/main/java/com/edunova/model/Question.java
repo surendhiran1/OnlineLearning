@@ -40,6 +40,12 @@ public class Question {
     @Column(columnDefinition = "TEXT")
     private String explanation;
 
+    @Column(columnDefinition = "TEXT", name = "test_cases")
+    private String testCases;
+
+    @Column(columnDefinition = "TEXT", name = "code_boilerplate")
+    private String codeBoilerplate;
+
     @Builder.Default
     private Integer points = 1;
 
