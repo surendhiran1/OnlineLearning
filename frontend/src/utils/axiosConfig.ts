@@ -71,6 +71,7 @@ api.interceptors.response.use(
         
         store.dispatch(setCredentials({
           accessToken: data.accessToken,
+          userId: data.userId || store.getState().auth.userId,
           email: data.email,
           fullName: data.fullName,
           role: data.role,

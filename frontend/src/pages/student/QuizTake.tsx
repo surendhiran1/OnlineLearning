@@ -12,8 +12,6 @@ import {
   TextField, 
   Checkbox, 
   FormGroup, 
-  Grid, 
-  Box,
   Divider,
   Chip
 } from '@mui/material';
@@ -23,10 +21,8 @@ import {
   Timer as TimerIcon, 
   Code as CodeIcon, 
   PlayArrow as PlayIcon,
-  ChevronRight,
   ChevronLeft,
   CheckCircle as CheckIcon,
-  EmojiEvents as TrophyIcon
 } from '@mui/icons-material';
 
 export default function QuizTake() {

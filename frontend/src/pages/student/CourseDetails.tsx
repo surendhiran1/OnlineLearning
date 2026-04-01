@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../store/store';
 import { Breadcrumbs, Link, Typography, Button, Paper, CircularProgress, Chip, Dialog, DialogTitle, DialogContent, IconButton, LinearProgress } from '@mui/material';
 import { NavigateNext as NavigateNextIcon, CheckCircle as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
 import { api } from '../../utils/axiosConfig';
@@ -10,7 +8,6 @@ import CourseChat from '../../components/chat/CourseChat';
 export default function CourseDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { darkMode } = useSelector((state: RootState) => state.theme);
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
